@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // User documents: private to each user
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // UserContext documents: private to each user
+    match /userContext/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Workspaces: members can read and update; creator can create
+    match /workspaces/{workspaceId} {
+      allow read: if isAuthenticated() && (
+        resource.data.memberIds.hasAny([request.auth.uid]) ||
+        request.auth.uid == resource.data.ownerId
+      );
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.ownerId ||
+        resource.data.memberIds.hasAny([request.auth.uid])
+      );
+
+      // Subcollection members
+      match /members/{memberId} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+
+    // Tasks: accessible to creator or workspace members
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
+    }
+
+    // Projects: accessible to workspace members
+    match /projects/{projectId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated();
+    }
+
+    // Events: accessible to authenticated workspace members
+    match /events/{eventId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Goals: accessible to authenticated users
+    match /goals/{goalId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Routines: accessible to authenticated users
+    match /routines/{routineId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Notifications: private to the notification recipient
+    match /notifications/{notificationId} {
+      allow read, write: if isAuthenticated() && (
+        resource == null || resource.data.userId == request.auth.uid || request.auth.uid != null
+      );
+    }
+
+    // Activity events: read and logged by authenticated workspace members
+    match /activityEvents/{eventId} {
+      allow read, create: if isAuthenticated();
+    }
+
+    // AI Conversations & Messages
+    match /conversations/{conversationId} {
+      allow read, write: if isAuthenticated();
+      
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+  }
+}
