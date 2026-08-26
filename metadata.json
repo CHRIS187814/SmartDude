@@ -1,8 +1,0 @@
-{
-  "name": "SmartDude - AI Companion",
-  "description": "SmartDude — Your AI companion for everything you need to get done. Adaptive task management, planning, scheduling, routines, goals, and workspace intelligence.",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
-}

@@ -1,197 +1,109 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User as FirebaseUser } from 'firebase/auth';
-import { authService } from '../services/authService';
-import { workspaceService } from '../services/workspaceService';
-import { UserProfile, Workspace, PersonalContext, WorkspaceContext } from '../types';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import type { Session, User } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
+import type { Profile } from '@/types';
 
-interface AuthContextType {
-  currentUser: FirebaseUser | null;
-  userProfile: UserProfile | null;
-  workspaces: Workspace[];
-  activeWorkspace: Workspace | null;
-  isLoading: boolean;
-  error: string | null;
-  loginWithEmail: (email: string, pass: string) => Promise<void>;
-  registerWithEmail: (email: string, pass: string, name: string, profileType: PersonalContext) => Promise<void>;
-  loginWithGoogle: (profileType?: PersonalContext) => Promise<void>;
-  logout: () => Promise<void>;
-  switchWorkspace: (workspaceId: string) => Promise<void>;
-  switchPersonalContext: (context: PersonalContext) => Promise<void>;
-  createWorkspace: (name: string, description: string, type: WorkspaceContext) => Promise<Workspace>;
+interface AuthContextValue {
+  session: Session | null;
+  user: User | null;
+  profile: Profile | null;
+  loading: boolean;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Listen to Auth changes
-  useEffect(() => {
-    const unsubscribe = authService.onAuthStateChanged(async (user) => {
-      setIsLoading(true);
-      setError(null);
-
-      if (user) {
-        setCurrentUser(user);
-        try {
-          // Load or ensure profile
-          const profile = await authService.ensureUserProfile(user);
-          setUserProfile(profile);
-
-          // Load workspaces
-          const wsList = await workspaceService.getUserWorkspaces(user.uid);
-          setWorkspaces(wsList);
-
-          // Set active workspace
-          const active = wsList.find((w) => w.id === profile.activeWorkspaceId) || wsList[0] || null;
-          setActiveWorkspace(active);
-        } catch (err: any) {
-          console.error('Error bootstrapping user session:', err);
-          setError(err.message || 'Failed to load user profile');
-        }
-      } else {
-        setCurrentUser(null);
-        setUserProfile(null);
-        setWorkspaces([]);
-        setActiveWorkspace(null);
-      }
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  // Listen to real-time workspaces when user is authenticated
-  useEffect(() => {
-    if (!currentUser) return;
-    const unsub = workspaceService.subscribeUserWorkspaces(currentUser.uid, (wsList) => {
-      setWorkspaces(wsList);
-      if (userProfile?.activeWorkspaceId) {
-        const found = wsList.find((w) => w.id === userProfile.activeWorkspaceId);
-        if (found) setActiveWorkspace(found);
-      }
-    });
-    return () => unsub();
-  }, [currentUser, userProfile?.activeWorkspaceId]);
-
-  const loginWithEmail = async (email: string, pass: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      await authService.loginWithEmail(email, pass);
-    } catch (err: any) {
-      setError(err.message || 'Login failed. Please check credentials.');
-      throw err;
-    } finally {
-      setIsLoading(false);
+  const loadProfile = async (uid: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', uid)
+      .maybeSingle();
+    if (error) {
+      console.error('Failed to load profile:', error.message);
+      return;
     }
-  };
-
-  const registerWithEmail = async (email: string, pass: string, name: string, profileType: PersonalContext) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      await authService.registerWithEmail(email, pass, name, profileType);
-    } catch (err: any) {
-      setError(err.message || 'Registration failed.');
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loginWithGoogle = async (profileType: PersonalContext = 'professional') => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      await authService.loginWithGoogle(profileType);
-    } catch (err: any) {
-      setError(err.message || 'Google sign-in failed.');
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const logout = async () => {
-    await authService.logout();
-  };
-
-  const switchWorkspace = async (workspaceId: string) => {
-    if (!currentUser || !userProfile) return;
-    const targetWs = workspaces.find((w) => w.id === workspaceId);
-    if (!targetWs) return;
-
-    setActiveWorkspace(targetWs);
-    await authService.updateUserProfile(currentUser.uid, {
-      activeWorkspaceId: workspaceId,
-    });
-    setUserProfile({ ...userProfile, activeWorkspaceId: workspaceId });
-  };
-
-  const switchPersonalContext = async (context: PersonalContext) => {
-    if (!currentUser || !userProfile) return;
-    await authService.updateUserProfile(currentUser.uid, {
-      profileType: context,
-    });
-    setUserProfile({ ...userProfile, profileType: context });
-  };
-
-  const createWorkspace = async (name: string, description: string, type: WorkspaceContext) => {
-    if (!currentUser) throw new Error('Must be logged in to create workspace');
-    const newWs = await workspaceService.createWorkspace(
-      currentUser.uid,
-      currentUser.displayName || 'SmartDude User',
-      currentUser.email || '',
-      currentUser.photoURL || '',
-      name,
-      description,
-      type
-    );
-    await switchWorkspace(newWs.id);
-    return newWs;
+    setProfile(data as Profile | null);
   };
 
   const refreshProfile = async () => {
-    if (!currentUser) return;
-    const p = await authService.getUserProfile(currentUser.uid);
-    if (p) setUserProfile(p);
+    if (user) await loadProfile(user.id);
+  };
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+      if (data.session?.user) {
+        loadProfile(data.session.user.id).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+      if (newSession?.user) {
+        (async () => {
+          await loadProfile(newSession.user.id);
+          setLoading(false);
+        })();
+      } else {
+        setProfile(null);
+        setLoading(false);
+      }
+    });
+
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const signUp = async (email: string, password: string, fullName: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName } },
+    });
+    if (error) return { error: error.message };
+    if (data.user) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        full_name: fullName,
+        preferences: { theme: 'light', notifications: true },
+      });
+    }
+    return { error: null };
+  };
+
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { error: error.message };
+    return { error: null };
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setProfile(null);
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        currentUser,
-        userProfile,
-        workspaces,
-        activeWorkspace,
-        isLoading,
-        error,
-        loginWithEmail,
-        registerWithEmail,
-        loginWithGoogle,
-        logout,
-        switchWorkspace,
-        switchPersonalContext,
-        createWorkspace,
-        refreshProfile,
-      }}
-    >
+    <AuthContext.Provider value={{ session, user, profile, loading, signUp, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
-};
+}
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
+}

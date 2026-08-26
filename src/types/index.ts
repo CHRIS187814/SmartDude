@@ -1,345 +1,167 @@
-export type Priority = 'Low' | 'Med' | 'High';
+export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
-export type ProjectCategory = 'Marketing' | 'Design' | 'Engineering' | 'Sales' | 'Product' | 'General';
+export type WorkspaceContextType = 'personal' | 'work' | 'study' | 'custom';
 
-export interface Subtask {
+export interface Profile {
   id: string;
-  title: string;
-  completed: boolean;
-  assigneeAvatar?: string;
-}
-
-export interface CommentItem {
-  id: string;
-  author: string;
-  avatar: string;
-  text: string;
-  time: string;
-  role?: string;
-  isCurrentUser?: boolean;
-  userId?: string;
-  createdAt?: string;
-}
-
-export interface ActivityItem {
-  id: string;
-  text: string;
-  user: string;
-  time: string;
-  type?: 'status' | 'complete' | 'attachment' | 'create' | 'comment';
-  statusColor?: string;
-}
-
-export interface UserPresence {
-  id: string;
-  name: string;
-  avatar: string;
-  color: string;
-  isTyping?: boolean;
-  role?: string;
-  lastActive?: string;
-}
-
-// ----------------------------------------------------
-// Core Multi-Persona and Multi-Workspace Types
-// ----------------------------------------------------
-
-export type PersonalContext = 
-  | 'student' 
-  | 'professional' 
-  | 'homemaker' 
-  | 'freelancer' 
-  | 'entrepreneur' 
-  | 'personal';
-
-export type WorkspaceContext = 
-  | 'personal' 
-  | 'team' 
-  | 'family' 
-  | 'client_project' 
-  | 'organization';
-
-export type WorkspaceRole = 'owner' | 'admin' | 'member' | 'viewer';
-
-export interface UserProfile {
-  uid: string;
-  displayName: string;
-  email: string;
-  photoURL: string;
-  role?: string;
-  profileType: PersonalContext;
-  onboardingCompleted: boolean;
-  activeWorkspaceId: string;
+  full_name: string | null;
+  role: string | null;
+  avatar_url: string | null;
   timezone: string;
-  locale?: string;
-  createdAt: string;
-  updatedAt: string;
-  lastActiveAt?: string;
+  personal_context: Record<string, unknown>;
+  preferences: { theme?: 'light' | 'dark'; notifications?: boolean };
+  onboarding_completed: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Workspace {
   id: string;
+  user_id: string;
   name: string;
-  description: string;
-  type: WorkspaceContext;
-  ownerId: string;
-  memberIds: string[];
-  createdAt: string;
-  updatedAt: string;
-  avatar?: string;
-}
-
-export interface WorkspaceMember {
-  userId: string;
-  workspaceId: string;
-  role: WorkspaceRole;
-  displayName: string;
-  email: string;
-  photoURL: string;
-  joinedAt: string;
-  status: 'active' | 'invited' | 'disabled';
-}
-
-// ----------------------------------------------------
-// Persistent Task, Project, Event, Goal, Routine Models
-// ----------------------------------------------------
-
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  project: string;
-  priority: Priority;
-  status: TaskStatus;
-  dueDate: string;
-  dueLabel?: string;
-  timeString?: string;
-  isOverdue?: boolean;
-  isToday?: boolean;
-  isFavorite?: boolean;
-  workspaceId?: string;
-  createdBy?: string;
-  projectId?: string;
-  profileContext?: PersonalContext;
-  estimatedDuration?: number; // minutes
-  actualDuration?: number; // minutes
-  assignees: {
-    name: string;
-    avatar: string;
-    initials?: string;
-    userId?: string;
-  }[];
-  subtasks: Subtask[];
-  tags: string[];
-  comments: CommentItem[];
-  activity: ActivityItem[];
-  viewers: UserPresence[];
-  createdAt: string;
-  updatedAt?: string;
-  completedAt?: string | null;
+  description: string | null;
+  context_type: WorkspaceContextType;
+  workspace_context: Record<string, unknown>;
+  color: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Project {
   id: string;
+  workspace_id: string;
+  user_id: string;
   name: string;
-  description: string;
-  category: ProjectCategory;
+  description: string | null;
   color: string;
-  icon: string;
-  progress: number;
-  completedTasks: number;
-  totalTasks: number;
-  workspaceId?: string;
-  ownerId?: string;
-  memberIds?: string[];
-  startDate?: string;
-  dueDate?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  members: {
-    name: string;
-    avatar: string;
-    userId?: string;
-  }[];
+  status: 'active' | 'archived' | 'completed';
+  due_date: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
-export type CalendarEventType = 'meeting' | 'class' | 'exam' | 'appointment' | 'personal' | 'deadline' | 'other';
-
-export interface CalendarEvent {
+export interface Task {
   id: string;
+  workspace_id: string;
+  project_id: string | null;
+  user_id: string;
   title: string;
-  description?: string;
-  type: CalendarEventType;
-  startTime: string; // ISO String or YYYY-MM-DDTHH:mm
-  endTime: string;
-  location?: string;
-  createdBy?: string;
-  workspaceId: string;
-  relatedTaskId?: string;
-  relatedProjectId?: string;
-  recurrence?: 'none' | 'daily' | 'weekly' | 'monthly';
-  createdAt: string;
-  updatedAt: string;
+  description: string | null;
+  priority: Priority;
+  status: TaskStatus;
+  due_date: string | null;
+  due_time: string | null;
+  reminder_at: string | null;
+  recurrence_rule: string | null;
+  completed: boolean;
+  completed_at: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
-export type GoalCategory = 'academic' | 'career' | 'personal' | 'health' | 'household' | 'business' | 'project';
-
-export interface Goal {
+export interface Subtask {
   id: string;
+  task_id: string;
+  user_id: string;
   title: string;
-  description: string;
-  category: GoalCategory;
-  targetValue: number;
-  currentValue: number;
-  unit: string;
-  deadline: string;
-  ownerId: string;
-  workspaceId: string;
-  status: 'in_progress' | 'completed' | 'paused';
-  createdAt: string;
-  updatedAt: string;
+  completed: boolean;
+  sort_order: number;
+  created_at: string;
 }
 
-export interface Routine {
+export interface Tag {
   id: string;
+  workspace_id: string;
+  user_id: string;
+  name: string;
+  color: string;
+  created_at: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: string;
   title: string;
-  description?: string;
-  frequency: 'daily' | 'weekly' | 'custom';
-  preferredTime?: string;
-  ownerId: string;
-  workspaceId: string;
-  profileContext?: PersonalContext;
-  active: boolean;
-  streakCount?: number;
-  lastCompletedDate?: string;
-  createdAt: string;
-  updatedAt: string;
+  body: string | null;
+  read: boolean;
+  scheduled_for: string;
+  related_task_id: string | null;
+  related_automation_id: string | null;
+  created_at: string;
 }
 
-export interface NotificationItem {
+export interface Automation {
   id: string;
+  user_id: string;
+  workspace_id: string | null;
+  name: string;
+  description: string | null;
+  trigger_type: string;
+  schedule_cron: string;
+  action_type: string;
+  action_params: Record<string, unknown>;
+  enabled: boolean;
+  last_run: string | null;
+  last_success: string | null;
+  last_failure: string | null;
+  last_error: string | null;
+  next_run: string | null;
+  run_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AiConversation {
+  id: string;
+  user_id: string;
   title: string;
-  message: string;
-  time: string;
-  isUnread: boolean;
-  group: 'Today' | 'Yesterday' | 'Earlier';
-  type: 'assignment' | 'deadline' | 'comment' | 'system' | 'workspace_update' | 'task_completed';
-  userId?: string;
-  workspaceId?: string;
-  taskId?: string;
-  highlightText?: string;
-  createdAt?: string;
+  created_at: string;
+  updated_at: string;
 }
 
-// ----------------------------------------------------
-// Activity Event Tracking & Context Engine
-// ----------------------------------------------------
-
-export type ActivityEventType = 
-  | 'TASK_CREATED'
-  | 'TASK_COMPLETED'
-  | 'TASK_UPDATED'
-  | 'TASK_DELETED'
-  | 'TASK_RESCHEDULED'
-  | 'TASK_PRIORITY_CHANGED'
-  | 'PROJECT_CREATED'
-  | 'PROJECT_UPDATED'
-  | 'PROJECT_COMPLETED'
-  | 'GOAL_CREATED'
-  | 'GOAL_UPDATED'
-  | 'GOAL_COMPLETED'
-  | 'ROUTINE_COMPLETED'
-  | 'CALENDAR_EVENT_CREATED'
-  | 'CALENDAR_EVENT_UPDATED'
-  | 'WORKSPACE_JOINED'
-  | 'WORKSPACE_SWITCHED'
-  | 'PROFILE_CHANGED'
-  | 'AI_INTERACTION';
-
-export interface ActivityEvent {
+export interface AiMessage {
   id: string;
-  userId: string;
-  workspaceId: string;
-  eventType: ActivityEventType;
-  entityType: 'task' | 'project' | 'goal' | 'routine' | 'event' | 'workspace' | 'profile' | 'ai';
-  entityId: string;
-  metadata?: Record<string, any>;
-  timestamp: string;
-}
-
-export interface UserContextData {
-  userId: string;
-  preferredProductivityPeriods: string[];
-  averageTaskCompletionTimeMinutes: number;
-  frequentlyUsedCategories: string[];
-  commonTaskPriorities: { high: number; med: number; low: number };
-  completionRate: number; // percentage 0 - 100
-  reschedulingRate: number; // percentage 0 - 100
-  activeGoalsCount: number;
-  activeProjectsCount: number;
-  workloadLevel: 'optimal' | 'light' | 'heavy';
-  lastCalculatedAt: string;
-  privacyPreferences: {
-    allowLearnFromTasks: boolean;
-    allowCalendarContext: boolean;
-    allowProductivityPatterns: boolean;
-  };
-}
-
-// ----------------------------------------------------
-// AI Companion Conversations
-// ----------------------------------------------------
-
-export interface AIConversation {
-  id: string;
-  userId: string;
-  workspaceId: string;
-  title: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface AIMessage {
-  id: string;
-  conversationId: string;
-  userId: string;
-  role: 'user' | 'assistant' | 'system';
+  conversation_id: string;
+  user_id: string;
+  role: 'user' | 'assistant';
   content: string;
-  timestamp: string;
+  action: AiAction | null;
+  action_status: 'pending' | 'confirmed' | 'cancelled' | 'executed' | 'failed' | null;
+  created_at: string;
 }
 
-// ----------------------------------------------------
-// Configuration & UI Helpers
-// ----------------------------------------------------
+export type AiActionType =
+  | 'CREATE_TASK'
+  | 'UPDATE_TASK'
+  | 'COMPLETE_TASK'
+  | 'CREATE_PROJECT'
+  | 'CREATE_REMINDER'
+  | 'CREATE_RECURRING_TASK'
+  | 'CREATE_AUTOMATION'
+  | 'UPDATE_AUTOMATION'
+  | 'DISABLE_AUTOMATION'
+  | 'ENABLE_AUTOMATION'
+  | 'CREATE_FOCUS_PLAN'
+  | 'RECOMMEND_PRIORITIES';
 
-export interface ContextConfig {
-  id: PersonalContext;
-  label: string;
-  badge: string;
-  icon: string;
-  tagline: string;
-  companionGreeting: string;
-  recommendedRoutines: string[];
-  smartTips: string[];
+export interface AiAction {
+  type: AiActionType;
+  [key: string]: unknown;
 }
 
-export interface WorkspaceConfig {
-  id: WorkspaceContext;
-  label: string;
-  icon: string;
-  description: string;
+export interface FocusPlanBlock {
+  start: string;
+  end: string;
+  title: string;
+  type: 'focus' | 'break';
 }
 
-export type ViewMode = 
-  | 'overview' 
-  | 'tasks' 
-  | 'task_detail'
-  | 'projects' 
-  | 'calendar' 
-  | 'analytics' 
-  | 'notifications' 
-  | 'settings' 
-  | 'favorites' 
-  | 'recent';
-
-export type ThemeMode = 'dark' | 'light' | 'system';
+export interface FocusPlan {
+  id: string;
+  user_id: string;
+  title: string;
+  blocks: FocusPlanBlock[];
+  created_at: string;
+}
