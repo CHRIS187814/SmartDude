@@ -3,8 +3,7 @@
 
 ## 🌐 Live Demo
 
-🚀 **Try SmartDude:**  
-https://ais-dev-mrqjpdewa7wcgkuq4vlb2l-708934551401.asia-southeast1.run.app
+🚀 **[Launch SmartDude](https://smartdude.bolt.host/)**
 
 > **Development / Demo Deployment**
 
