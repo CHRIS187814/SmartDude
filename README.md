@@ -1,7 +1,14 @@
 # SmartDude — AI Companion for Smarter Work & Life
+> A context-aware AI companion that helps users organize, schedule, execute, and automate their work.
 
-SmartDude is a context-aware AI companion and productivity workspace designed to help people organize tasks, projects, routines, notifications, and personal/work contexts in one place.
+## 🌐 Live Demo
 
+🚀 **Try SmartDude:**  
+https://ais-dev-mrqjpdewa7wcgkuq4vlb2l-708934551401.asia-southeast1.run.app
+
+> **Development / Demo Deployment**
+
+SmartDude is an AI-powered productivity workspace designed to adapt to the user's personal and workspace context. SmartDude is a context-aware AI companion and productivity workspace designed to help people organize tasks, projects, routines, notifications, and personal/work contexts in one place.
 The application combines an adaptive task-management experience with AI-assisted routines and real-time cloud synchronization, with support for different personal profiles and workspace contexts.
 
 ## ✨ Key Features
