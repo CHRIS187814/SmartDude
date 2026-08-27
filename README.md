@@ -2,6 +2,11 @@
 
 A context-aware AI companion that helps you understand, plan, schedule, remind, and automate your work. SmartDude adapts productivity, tasks, routines, and workflows to your personal and workspace context.
 
+## Demo
+<a href="https://smartdude.bolt.host/">
+  <img src="https://img.shields.io/badge/🚀%20Open%20SmartDude-blue?style=for-the-badge" alt="Open SmartDude">
+</a>
+
 ## Core Concept
 
 SmartDude is not just a to-do list. It follows a core loop:
